@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"strings"
 	"syscall"
 )
@@ -13,9 +12,6 @@ import (
 // Run accepts a slice of Task and connects
 // to a locust master.
 func Run(tasks ...*Task) {
-
-	// support go version below 1.5
-	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	if !flag.Parsed() {
 		flag.Parse()
@@ -74,7 +70,15 @@ var maxRPSThreshold int64
 var maxRPSEnabled = false
 var maxRPSControlChannel = make(chan bool)
 
+var slave = false
+
+var clients int
+var hatchRate float64
+var runTime *int
+
 func init() {
-	runTasks = flag.String("run-tasks", "", "Run tasks without connecting to the master, multiply tasks is separated by comma. Usually, it's for debug purpose.")
 	flag.Int64Var(&maxRPS, "max-rps", 0, "Max RPS that boomer can generate.")
+	flag.IntVar(&clients, "clients", 1, "Number of concurrent Locust users. Only used together with --no-web")
+	flag.Float64Var(&hatchRate, "hatch-rate", 1, "The rate per second in which clients are spawned. Only used together with --no-web")
+	runTime = flag.Int("run-time", 0, "Stop after the specified amount of time, e.g. (300s, 20m, 3h, 1h30m, etc.). Only used together with --no-web")
 }
