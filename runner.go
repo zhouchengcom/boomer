@@ -85,17 +85,7 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 						case <-quit:
 							return
 						default:
-							if maxRPSEnabled {
-								token := atomic.AddInt64(&maxRPSThreshold, -1)
-								if token < 0 {
-									// max RPS is reached, wait until next second
-									<-maxRPSControlChannel
-								} else {
-									r.safeRun(fn)
-								}
-							} else {
-								r.safeRun(fn)
-							}
+							r.safeRun(fn)
 						}
 					}
 				}(task.Fn)
@@ -204,15 +194,4 @@ func (r *runner) getReady() {
 		}
 	}()
 
-	if maxRPSEnabled {
-		go func() {
-			for {
-				atomic.StoreInt64(&maxRPSThreshold, maxRPS)
-				time.Sleep(1 * time.Second)
-				// use channel to broadcast
-				close(maxRPSControlChannel)
-				maxRPSControlChannel = make(chan bool)
-			}
-		}()
-	}
 }

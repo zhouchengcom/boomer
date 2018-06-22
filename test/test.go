@@ -1,16 +1,14 @@
 package main
 
 import (
-	"flag"
+	"glocust"
 )
 
-var ss struct {
-	bb =1
+var opthons struct {
 }
 
 func main() {
-	if flag.Parsed() {
-		flag.Parse()
-	}
+	glocust.Now()
+	println("ddd")
 
 }
