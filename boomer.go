@@ -10,7 +10,7 @@ import (
 
 // Run accepts a slice of Task and connects
 // to a locust master.
-func Run(tasks ...*Task) {
+func Run(newLocust func() Locust) {
 
 	if !flag.Parsed() {
 		flag.Parse()
@@ -19,9 +19,9 @@ func Run(tasks ...*Task) {
 	var r *runner
 	client := newClient()
 	r = &runner{
-		tasks:  tasks,
-		client: client,
-		nodeID: getNodeID(),
+		newLocust: newLocust,
+		client:    client,
+		nodeID:    getNodeID(),
 	}
 
 	Events.Subscribe("boomer:quit", r.onQuiting)

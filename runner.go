@@ -23,14 +23,9 @@ const (
 // Task is like locust's task.
 // when boomer receive start message, it will spawn several
 // goroutines to run Task.Fn .
-type Task struct {
-	Weight int
-	Fn     func()
-	Name   string
-}
 
 type runner struct {
-	tasks       []*Task
+	newLocust   func() Locust
 	numClients  int32
 	hatchRate   int
 	stopChannel chan bool
@@ -39,64 +34,56 @@ type runner struct {
 	nodeID      string
 }
 
-func (r *runner) safeRun(fn func()) {
+func (r *runner) safeRun(fn func()) *bool {
+	hasException := false
 	defer func() {
 		// don't panic
 		err := recover()
 		if err != nil {
 			debug.PrintStack()
 			Events.Publish("request_failure", "unknown", "panic", 0.0, fmt.Sprintf("%v", err))
+			hasException = true
 		}
 	}()
 	fn()
+	return &hasException
 }
 
 func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 
 	log.Println("Hatching and swarming", spawnCount, "clients at the rate", r.hatchRate, "clients/s...")
 
-	weightSum := 0
-	for _, task := range r.tasks {
-		weightSum += task.Weight
-	}
+	for i := 1; i <= spawnCount; i++ {
+		select {
+		case <-quit:
+			// quit hatching goroutine
+			return
+		default:
+			if i%r.hatchRate == 0 {
+				time.Sleep(1 * time.Second)
+			}
+			atomic.AddInt32(&r.numClients, 1)
+			locust := r.newLocust()
+			go func(locust Locust) {
+				locust.OnStart()
 
-	for _, task := range r.tasks {
-
-		percent := float64(task.Weight) / float64(weightSum)
-		amount := int(round(float64(spawnCount)*percent, .5, 0))
-
-		if weightSum == 0 {
-			amount = int(float64(spawnCount) / float64(len(r.tasks)))
-		}
-
-		for i := 1; i <= amount; i++ {
-			select {
-			case <-quit:
-				// quit hatching goroutine
-				return
-			default:
-				if i%r.hatchRate == 0 {
-					time.Sleep(1 * time.Second)
-				}
-				atomic.AddInt32(&r.numClients, 1)
-				go func(fn func()) {
-					for {
-						select {
-						case <-quit:
+				tasks := locust.Tasks()
+				weightTasks := tasks
+				for {
+					select {
+					case <-quit:
+						return
+					default:
+						err := r.safeRun(tasks[0].Fn)
+						if *err && (locust.CatchExceptions() == false) {
 							return
-						default:
-							r.safeRun(fn)
 						}
 					}
-				}(task.Fn)
-			}
-
+				}
+			}(locust)
 		}
-
 	}
-
 	r.hatchComplete()
-
 }
 
 func (r *runner) startHatching(spawnCount int, hatchRate int) {
