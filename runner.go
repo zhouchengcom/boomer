@@ -68,7 +68,7 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 				locust.OnStart()
 
 				tasks := locust.Tasks()
-				weightTasks := tasks
+				// weightTasks := tasks
 				for {
 					select {
 					case <-quit:
@@ -111,13 +111,16 @@ func (r *runner) hatchComplete() {
 
 	data := make(map[string]interface{})
 	data["count"] = r.numClients
-	toMaster <- newMessage("hatch_complete", data, r.nodeID)
-
+	if r.client != nil {
+		toMaster <- newMessage("hatch_complete", data, r.nodeID)
+	}
 	r.state = stateRunning
 }
 
 func (r *runner) onQuiting() {
-	toMaster <- newMessage("quit", nil, r.nodeID)
+	if r.client != nil {
+		toMaster <- newMessage("quit", nil, r.nodeID)
+	}
 }
 
 func (r *runner) stop() {
@@ -134,6 +137,9 @@ func (r *runner) getReady() {
 
 	r.state = stateInit
 
+	if r.client == nil {
+		return
+	}
 	// read message from master
 	go func() {
 		for {
