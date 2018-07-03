@@ -14,7 +14,7 @@ import (
 func Run(newLocust func() Locust) {
 
 	kingpin.Parse()
-	if *options.slave {
+	if *options.slave == false {
 		runDistributed(newLocust)
 	} else {
 		runLocal(newLocust)
