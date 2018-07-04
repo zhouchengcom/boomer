@@ -1,7 +1,13 @@
 package main
 
-import "github.com/myzhan/boomer"
-import "time"
+import (
+	"time"
+
+	"github.com/myzhan/boomer"
+)
+
+var TaskSet struct {
+}
 
 func foo() {
 

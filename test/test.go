@@ -1,66 +1,52 @@
 package main
 
 import (
-	"fmt"
-	// "glocust"
+	"glocust"
+	"time"
 )
 
-var opthons struct {
+// "glocust"
+
+type Tasks struct {
+	glocust.LocustMate
+	index int
 }
 
-type BB struct {
-	aa   int
-	name string
+func (t *Tasks) Min() int {
+	return 0
 }
 
-func (p *BB) Name() string {
-	println(p.name)
-	return ""
+func (t *Tasks) Max() int {
+	return 0
 }
 
-// func (p *BB) Call() {
-// 	println("Sdfsdfsdfsdf")
-// }
-
-type CC struct {
-	name string
+func (t *Tasks) Tasks() []glocust.Task {
+	return nil
 }
 
-type QQ struct {
-	BB
-	CC
+func newLocust() glocust.Locust {
+	t := Tasks{}
+	return &t
 }
 
-func (p *CC) School() {
-	fmt.Println(p.name)
+func (t *Tasks) OnStart() {
+
 }
 
-func (p *CC) Name() string {
-	fmt.Println(p.name)
-	return ""
+func (t *Tasks) CatchExceptions() bool {
+	return true
 }
 
-func testFunc(f func() string) *bool {
-	result := false
-	defer func() {
+func (t *Tasks) foo() {
+	start := glocust.Now()
+	time.Sleep(100 * time.Millisecond)
+	elapsed := glocust.Now() - start
+	t.index++
 
-		result = true
-
-	}()
-
-	f()
-	println("resut")
-	return &result
+	glocust.Events.Publish("request_success", "http", "foo", elapsed, int64(10))
 }
 
 func main() {
 	// glocust.Now()
-
-	a := BB{1, "222"}
-	// println()
-	// println(BB)
-	c := testFunc(a.Name)
-	println("main return")
-	println(*c)
-
+	glocust.Run(newLocust)
 }
