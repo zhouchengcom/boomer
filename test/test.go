@@ -12,29 +12,10 @@ type Tasks struct {
 	index int
 }
 
-func (t *Tasks) Min() int {
-	return 0
-}
-
-func (t *Tasks) Max() int {
-	return 0
-}
-
-func (t *Tasks) Tasks() []glocust.Task {
-	return nil
-}
-
 func newLocust() glocust.Locust {
 	t := Tasks{}
+	t.AddTask(1, t.foo)
 	return &t
-}
-
-func (t *Tasks) OnStart() {
-
-}
-
-func (t *Tasks) CatchExceptions() bool {
-	return true
 }
 
 func (t *Tasks) foo() {
@@ -47,6 +28,6 @@ func (t *Tasks) foo() {
 }
 
 func main() {
-	// glocust.Now()
-	glocust.Run(newLocust)
+	log
+	// glocust.Run(newLocust)
 }

@@ -11,7 +11,6 @@ type Locust interface {
 type Task struct {
 	Weight int
 	Fn     func()
-	Name   string
 }
 
 type LocustMate struct {
@@ -31,6 +30,15 @@ func (l *LocustMate) Max() int {
 
 func (l *LocustMate) Tasks() []Task {
 	return l.tasks
+}
+
+func (l *LocustMate) OnStart() {
+
+}
+
+func (l *LocustMate) AddTask(weight int, fn func()) {
+	task := Task{Weight: weight, Fn: fn}
+	l.tasks = append(l.tasks, task)
 }
 
 func (l *LocustMate) CatchExceptions() bool {
