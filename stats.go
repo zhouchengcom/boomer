@@ -263,8 +263,8 @@ type requestFailure struct {
 }
 
 var stats = newRequestStats()
-var requestSuccessChannel = make(chan *requestSuccess, 100)
-var requestFailureChannel = make(chan *requestFailure, 100)
+var requestSuccessChannel = make(chan *requestSuccess, 1000)
+var requestFailureChannel = make(chan *requestFailure, 1000)
 var clearStatsChannel = make(chan bool)
 var messageToRunner = make(chan map[string]interface{}, 10)
 
@@ -276,6 +276,7 @@ func init() {
 		for {
 			select {
 			case m := <-requestSuccessChannel:
+				// println("dd")
 				stats.logRequest(m.requestType, m.name, m.responseTime, m.responseLength)
 			case n := <-requestFailureChannel:
 				stats.logError(n.requestType, n.name, n.error)
@@ -284,7 +285,10 @@ func init() {
 			case <-ticker.C:
 				data := collectReportData()
 				// send data to channel, no network IO in this goroutine
+				println("d")
+
 				messageToRunner <- data
+				println("2")
 			}
 		}
 	}()

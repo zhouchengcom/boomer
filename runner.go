@@ -78,6 +78,8 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 						if *err && (locust.CatchExceptions() == false) {
 							return
 						}
+						// sleepTime := rand.Intn(locust.Max()-locust.Min()) + locust.Min()
+						// time.Sleep(time.Duration(sleepTime) * time.Millisecond)
 					}
 				}
 			}(locust)
@@ -137,6 +139,20 @@ func (r *runner) getReady() {
 
 	r.state = stateInit
 
+	// report to master
+	go func() {
+		for {
+			select {
+			case data := <-messageToRunner:
+				data["user_count"] = r.numClients
+				if r.client != nil {
+					println("what")
+					toMaster <- newMessage("stats", data, r.nodeID)
+				}
+			}
+		}
+	}()
+
 	if r.client == nil {
 		return
 	}
@@ -175,16 +191,5 @@ func (r *runner) getReady() {
 
 	// tell master, I'm ready
 	toMaster <- newMessage("client_ready", nil, r.nodeID)
-
-	// report to master
-	go func() {
-		for {
-			select {
-			case data := <-messageToRunner:
-				data["user_count"] = r.numClients
-				toMaster <- newMessage("stats", data, r.nodeID)
-			}
-		}
-	}()
 
 }

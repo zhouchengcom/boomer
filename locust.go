@@ -14,22 +14,22 @@ type Task struct {
 }
 
 type LocustMate struct {
-	min             int
-	max             int
-	tasks           []Task
-	catchExceptions bool
+	MinWait         int
+	MaxWait         int
+	TaskSet         []Task
+	Catchexceptions bool
 }
 
 func (l *LocustMate) Min() int {
-	return l.min
+	return l.MinWait
 }
 
 func (l *LocustMate) Max() int {
-	return l.max
+	return l.MaxWait
 }
 
 func (l *LocustMate) Tasks() []Task {
-	return l.tasks
+	return l.TaskSet
 }
 
 func (l *LocustMate) OnStart() {
@@ -38,9 +38,9 @@ func (l *LocustMate) OnStart() {
 
 func (l *LocustMate) AddTask(weight int, fn func()) {
 	task := Task{Weight: weight, Fn: fn}
-	l.tasks = append(l.tasks, task)
+	l.TaskSet = append(l.TaskSet, task)
 }
 
 func (l *LocustMate) CatchExceptions() bool {
-	return l.catchExceptions
+	return l.Catchexceptions
 }

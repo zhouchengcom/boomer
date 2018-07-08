@@ -14,6 +14,8 @@ type Tasks struct {
 
 func newLocust() glocust.Locust {
 	t := Tasks{}
+	t.MinWait = 100
+	t.MaxWait = 101
 	t.AddTask(1, t.foo)
 	return &t
 }
@@ -23,11 +25,11 @@ func (t *Tasks) foo() {
 	time.Sleep(100 * time.Millisecond)
 	elapsed := glocust.Now() - start
 	t.index++
-
-	glocust.Events.Publish("request_success", "http", "foo", elapsed, int64(10))
+	// println(t.index)
+	glocust.RequestSuccess("http", "foo", elapsed, int64(10))
 }
 
 func main() {
-	log
-	// glocust.Run(newLocust)
+	// loga
+	glocust.Run(newLocust)
 }

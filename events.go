@@ -24,7 +24,8 @@ func convertResponseTime(origin interface{}) int64 {
 	return responseTime
 }
 
-func requestSuccessHandler(requestType string, name string, responseTime interface{}, responseLength int64) {
+func RequestSuccess(requestType string, name string, responseTime interface{}, responseLength int64) {
+	// println(len(requestSuccessChannel))
 	requestSuccessChannel <- &requestSuccess{
 		requestType:    requestType,
 		name:           name,
@@ -33,7 +34,7 @@ func requestSuccessHandler(requestType string, name string, responseTime interfa
 	}
 }
 
-func requestFailureHandler(requestType string, name string, responseTime interface{}, exception string) {
+func RequestFailure(requestType string, name string, responseTime interface{}, exception string) {
 	requestFailureChannel <- &requestFailure{
 		requestType:  requestType,
 		name:         name,
@@ -42,7 +43,7 @@ func requestFailureHandler(requestType string, name string, responseTime interfa
 	}
 }
 
-func init() {
-	Events.Subscribe("request_success", requestSuccessHandler)
-	Events.Subscribe("request_failure", requestFailureHandler)
-}
+// func init() {
+// 	Events.Subscribe("request_success", requestSuccessHandler)
+// 	Events.Subscribe("request_failure", requestFailureHandler)
+// }
