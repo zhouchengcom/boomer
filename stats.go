@@ -285,10 +285,8 @@ func init() {
 			case <-ticker.C:
 				data := collectReportData()
 				// send data to channel, no network IO in this goroutine
-				println("d")
-
 				messageToRunner <- data
-				println("2")
+
 			}
 		}
 	}()

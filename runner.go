@@ -3,8 +3,9 @@ package glocust
 import (
 	"fmt"
 	"log"
-	"os"
+	"math/rand"
 	"runtime/debug"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -18,6 +19,7 @@ const (
 
 const (
 	slaveReportInterval = 3 * time.Second
+	waitFinishTime      = 5 * time.Second
 )
 
 // Task is like locust's task.
@@ -29,9 +31,11 @@ type runner struct {
 	numClients  int32
 	hatchRate   int
 	stopChannel chan bool
+	exitChannel chan bool
 	state       string
 	client      client
 	nodeID      string
+	wg          sync.WaitGroup
 }
 
 func (r *runner) safeRun(fn func()) *bool {
@@ -47,6 +51,10 @@ func (r *runner) safeRun(fn func()) *bool {
 	}()
 	fn()
 	return &hasException
+}
+
+func (r *runner) wait() {
+	<-r.exitChannel
 }
 
 func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
@@ -65,6 +73,9 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 			atomic.AddInt32(&r.numClients, 1)
 			locust := r.newLocust()
 			go func(locust Locust) {
+				r.wg.Add(1)
+				defer r.wg.Done()
+
 				locust.OnStart()
 
 				tasks := locust.Tasks()
@@ -78,8 +89,10 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 						if *err && (locust.CatchExceptions() == false) {
 							return
 						}
-						// sleepTime := rand.Intn(locust.Max()-locust.Min()) + locust.Min()
-						// time.Sleep(time.Duration(sleepTime) * time.Millisecond)
+						sleepTime := rand.Intn(locust.Max()-locust.Min()) + locust.Min()
+						if sleepTime != 0 {
+							time.Sleep(time.Duration(sleepTime) * time.Millisecond)
+						}
 					}
 				}
 			}(locust)
@@ -119,6 +132,23 @@ func (r *runner) hatchComplete() {
 	r.state = stateRunning
 }
 
+func (r *runner) waitTaskFinish() {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		r.wg.Wait()
+	}()
+
+	select {
+	case <-c:
+		log.Println("all task finish") // completed normally
+	case <-time.After(waitFinishTime):
+		log.Println("wait task finish timeout")
+	}
+
+	r.exitChannel <- true
+}
+
 func (r *runner) onQuiting() {
 	if r.client != nil {
 		toMaster <- newMessage("quit", nil, r.nodeID)
@@ -130,7 +160,7 @@ func (r *runner) stop() {
 	if r.state == stateRunning || r.state == stateHatching {
 		close(r.stopChannel)
 		r.state = stateStopped
-		log.Println("Recv stop message from master, all the goroutines are stopped")
+		log.Println("Recv stop message, all the goroutines will stop")
 	}
 
 }
@@ -146,7 +176,6 @@ func (r *runner) getReady() {
 			case data := <-messageToRunner:
 				data["user_count"] = r.numClients
 				if r.client != nil {
-					println("what")
 					toMaster <- newMessage("stats", data, r.nodeID)
 				}
 			}
@@ -154,6 +183,7 @@ func (r *runner) getReady() {
 	}()
 
 	if r.client == nil {
+
 		return
 	}
 	// read message from master
@@ -184,7 +214,8 @@ func (r *runner) getReady() {
 				toMaster <- newMessage("client_ready", nil, r.nodeID)
 			case "quit":
 				log.Println("Got quit message from master, shutting down...")
-				os.Exit(0)
+				r.stop()
+				r.waitTaskFinish()
 			}
 		}
 	}()

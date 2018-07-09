@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -14,6 +15,7 @@ import (
 func Run(newLocust func() Locust) {
 
 	kingpin.Parse()
+
 	if *options.slave == false {
 		runLocal(newLocust)
 
@@ -38,7 +40,17 @@ func runDistributed(newLocust func() Locust) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT)
 
-	<-c
+	if *options.runTime != 0 {
+		go func() {
+			time.Sleep(time.Duration(*options.runTime) * time.Second)
+			log.Println("Time limit reached. Stopping Locust.")
+			Events.Publish("boomer:quit")
+			r.stop()
+		}()
+	}
+
+	r.wait()
+
 	Events.Publish("boomer:quit")
 
 	// wait for quit message is sent to master
@@ -50,8 +62,9 @@ func runLocal(newLocust func() Locust) {
 
 	var r *runner
 	r = &runner{
-		newLocust: newLocust,
-		nodeID:    getNodeID(),
+		newLocust:   newLocust,
+		nodeID:      getNodeID(),
+		exitChannel: make(chan bool),
 	}
 
 	Events.Subscribe("boomer:quit", r.onQuiting)
@@ -61,8 +74,23 @@ func runLocal(newLocust func() Locust) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT)
 
-	<-c
-	Events.Publish("boomer:quit")
+	if *options.runTime != 0 {
+		go func() {
+			time.Sleep(time.Duration(*options.runTime) * time.Second)
+			log.Println("Time limit reached. Stopping Locust.")
+			Events.Publish("boomer:quit")
+			r.stop()
+			r.waitTaskFinish()
+		}()
+	}
+	go func() {
+		<-c
+		log.Println("Got SIGTERM signal")
+		Events.Publish("boomer:quit")
+		r.stop()
+		r.waitTaskFinish()
+	}()
+	r.wait()
 
 	// wait for quit message is sent to master
 	log.Println("shut down")
