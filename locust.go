@@ -4,6 +4,7 @@ type Locust interface {
 	Min() int
 	Max() int
 	Tasks() []Task
+	WeightsTasks() []Task
 	OnStart()
 	CatchExceptions() bool
 }
@@ -43,4 +44,14 @@ func (l *LocustMate) AddTask(weight int, fn func()) {
 
 func (l *LocustMate) CatchExceptions() bool {
 	return l.Catchexceptions
+}
+
+func (l *LocustMate) WeightsTasks() []Task {
+	var tasks []Task
+	for _, v := range l.TaskSet {
+		for i := 0; i < v.Weight; i++ {
+			tasks = append(tasks, v)
+		}
+	}
+	return tasks
 }

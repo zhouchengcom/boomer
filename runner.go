@@ -45,7 +45,7 @@ func (r *runner) safeRun(fn func()) *bool {
 		err := recover()
 		if err != nil {
 			debug.PrintStack()
-			Events.Publish("request_failure", "unknown", "panic", 0.0, fmt.Sprintf("%v", err))
+			RequestFailure("unknown", "panic", 0.0, fmt.Sprintf("%v", err))
 			hasException = true
 		}
 	}()
@@ -78,14 +78,15 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 
 				locust.OnStart()
 
-				tasks := locust.Tasks()
+				tasks := locust.WeightsTasks()
 				// weightTasks := tasks
 				for {
 					select {
 					case <-quit:
 						return
 					default:
-						err := r.safeRun(tasks[0].Fn)
+
+						err := r.safeRun(tasks[rand.Intn(len(tasks))].Fn)
 						if *err && (locust.CatchExceptions() == false) {
 							return
 						}
