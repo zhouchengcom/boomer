@@ -12,6 +12,7 @@ var options struct {
 	hatchRate   *float64
 	runTime     *int
 	csvFilebase *string
+	onlySummary *bool
 }
 
 func init() {
@@ -55,4 +56,10 @@ func init() {
 		"Stop after the specified amount of time,. Only used together with --no-web").
 		Default("0").
 		Int()
+
+	options.onlySummary = kingpin.Flag(
+		"only-summary",
+		"Only print the summary stats").
+		Default("false").
+		Bool()
 }

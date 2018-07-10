@@ -1,6 +1,9 @@
 package glocust
 
 import (
+	"bytes"
+	"fmt"
+	"sort"
 	"time"
 )
 
@@ -214,6 +217,48 @@ func (s *statsEntry) getStrippedReport() map[string]interface{} {
 	return report
 }
 
+var buffer bytes.Buffer
+
+func printStats(stats *requestStats) {
+	buffer.Reset()
+	fmt.Fprintf(&buffer, "%30s %7s %7s %7s %7s %7s  | %7s %7s\n", "Name", "# reqs", "# fails", "Avg", "Min", "Max", "Median", "req/s")
+	fmt.Fprintf(&buffer, "----------------------------------------------------------------------------------------------------------\n")
+
+	var keys []string
+	for k := range stats.entries {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	now := time.Now().Unix()
+	for _, k := range keys {
+		s := stats.entries[k]
+		qps := int64(0)
+		if now-s.lastRequestTimestamp < 3 {
+			qps = s.numReqsPerSec[s.lastRequestTimestamp]
+		}
+
+		sum := int64(0)
+		for _, v := range s.responseTimes {
+			sum += v
+		}
+		avg := sum / int64(len(s.responseTimes))
+		fmt.Fprintf(&buffer, "%30s %7d %7d %7d %7d %7d  | %7d %7d\n", s.name, s.numRequests,
+			s.numFailures, avg, s.minResponseTime, s.maxResponseTime, 0, qps)
+
+	}
+	fmt.Fprintf(&buffer, "----------------------------------------------------------------------------------------------------------\n")
+	total := stats.total
+	tqps := int64(0)
+	if now-total.lastRequestTimestamp < 3 {
+		tqps = total.numReqsPerSec[total.lastRequestTimestamp]
+	}
+	fmt.Fprintf(&buffer, "%30s %7d %7d %7d %7d %7d  | %7d %7d\n\n", total.name, total.numRequests,
+		total.numFailures, 0, total.minResponseTime, total.maxResponseTime, 0, tqps)
+	print(buffer.String())
+
+}
+
 type statsError struct {
 	name       string
 	method     string
@@ -283,6 +328,9 @@ func init() {
 			case <-clearStatsChannel:
 				stats.clearAll()
 			case <-ticker.C:
+				if *options.slave != true && *options.onlySummary != true {
+					printStats(stats)
+				}
 				data := collectReportData()
 				// send data to channel, no network IO in this goroutine
 				messageToRunner <- data

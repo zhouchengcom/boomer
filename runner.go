@@ -183,7 +183,6 @@ func (r *runner) getReady() {
 	}()
 
 	if r.client == nil {
-
 		return
 	}
 	// read message from master
