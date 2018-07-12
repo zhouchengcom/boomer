@@ -1,5 +1,6 @@
 package glocust
 
+// Define locust interface.
 type Locust interface {
 	Min() int
 	Max() int

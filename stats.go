@@ -221,7 +221,7 @@ var buffer bytes.Buffer
 
 func printStats(stats *requestStats) {
 	buffer.Reset()
-	fmt.Fprintf(&buffer, "%30s %7s %7s %7s %7s %7s  | %7s %7s\n", "Name", "# reqs", "# fails", "Avg", "Min", "Max", "Median", "req/s")
+	fmt.Fprintf(&buffer, "%15s %7s %7s %7s %7s %7s  | %7s %7s\n", "Name", "# reqs", "# fails", "Avg", "Min", "Max", "Median", "req/s")
 	fmt.Fprintf(&buffer, "----------------------------------------------------------------------------------------------------------\n")
 
 	var keys []string
@@ -243,7 +243,7 @@ func printStats(stats *requestStats) {
 			sum += v
 		}
 		avg := sum / int64(len(s.responseTimes))
-		fmt.Fprintf(&buffer, "%30s %7d %7d %7d %7d %7d  | %7d %7d\n", s.name, s.numRequests,
+		fmt.Fprintf(&buffer, "%15s %7d %7d %7d %7d %7d  | %7d %7d\n", s.name, s.numRequests,
 			s.numFailures, avg, s.minResponseTime, s.maxResponseTime, 0, qps)
 
 	}
@@ -253,7 +253,7 @@ func printStats(stats *requestStats) {
 	if now-total.lastRequestTimestamp < 3 {
 		tqps = total.numReqsPerSec[total.lastRequestTimestamp]
 	}
-	fmt.Fprintf(&buffer, "%30s %7d %7d %7d %7d %7d  | %7d %7d\n\n", total.name, total.numRequests,
+	fmt.Fprintf(&buffer, "%15s %7d %7d %7d %7d %7d  | %7d %7d\n\n", total.name, total.numRequests,
 		total.numFailures, 0, total.minResponseTime, total.maxResponseTime, 0, tqps)
 	print(buffer.String())
 

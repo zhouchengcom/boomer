@@ -9,7 +9,7 @@ var options struct {
 	masterHost  *string
 	masterPort  *int
 	numClients  *int
-	hatchRate   *float64
+	hatchRate   *int
 	runTime     *int
 	csvFilebase *string
 	onlySummary *bool
@@ -49,7 +49,7 @@ func init() {
 		"hatch-rate",
 		"The rate per second in which clients are spawned. Only used together with --no-web").
 		Default("1").
-		Float()
+		Int()
 
 	options.runTime = kingpin.Flag(
 		"run-time",

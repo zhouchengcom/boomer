@@ -70,7 +70,7 @@ func runLocal(newLocust func() Locust) {
 	Events.Subscribe("boomer:quit", r.onQuiting)
 
 	r.getReady()
-	r.startHatching(10, 1)
+	r.startHatching(*options.numClients, *options.hatchRate)
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT)
 
