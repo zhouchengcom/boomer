@@ -56,9 +56,7 @@ func (r *runner) safeRun(fn func()) *bool {
 }
 
 func (r *runner) wait() {
-
 	<-r.exitChannel
-	println("i am exit")
 }
 
 func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
@@ -156,9 +154,8 @@ func (r *runner) waitTaskFinish() {
 	case <-time.After(waitFinishTime):
 		log.Println("wait task finish timeout")
 	}
-	println("begin send exit single")
+
 	r.exitChannel <- true
-	println("finisha send exit single")
 }
 
 func (r *runner) onQuiting() {
