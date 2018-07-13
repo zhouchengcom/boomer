@@ -15,7 +15,6 @@ import (
 func Run(newLocust func() Locust) {
 
 	kingpin.Parse()
-
 	if *options.slave == false {
 		runLocal(newLocust)
 
@@ -25,14 +24,7 @@ func Run(newLocust func() Locust) {
 }
 
 func runDistributed(newLocust func() Locust) {
-	var r *runner
-	client := newClient()
-	r = &runner{
-		newLocust: newLocust,
-		client:    client,
-		nodeID:    getNodeID(),
-	}
-
+	r := newRunner(newLocust, true)
 	Events.Subscribe("boomer:quit", r.onQuiting)
 
 	r.getReady()
@@ -60,13 +52,8 @@ func runDistributed(newLocust func() Locust) {
 
 func runLocal(newLocust func() Locust) {
 
-	var r *runner
-	r = &runner{
-		newLocust:   newLocust,
-		nodeID:      getNodeID(),
-		exitChannel: make(chan bool),
-	}
-
+	r := newRunner(newLocust, false)
+	println(r)
 	Events.Subscribe("boomer:quit", r.onQuiting)
 
 	r.getReady()
@@ -90,8 +77,8 @@ func runLocal(newLocust func() Locust) {
 		r.stop()
 		r.waitTaskFinish()
 	}()
+
 	r.wait()
 
-	// wait for quit message is sent to master
 	log.Println("shut down")
 }

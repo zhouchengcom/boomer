@@ -56,7 +56,9 @@ func (r *runner) safeRun(fn func()) *bool {
 }
 
 func (r *runner) wait() {
+
 	<-r.exitChannel
+	println("i am exit")
 }
 
 func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
@@ -73,10 +75,15 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 				time.Sleep(1 * time.Second)
 			}
 			atomic.AddInt32(&r.numClients, 1)
-			locust := r.newLocust()
-			go func(locust Locust) {
+
+			go func() {
 				r.wg.Add(1)
-				defer r.wg.Done()
+				defer func() {
+					r.wg.Done()
+					atomic.AddInt32(&r.numClients, -1)
+				}()
+
+				locust := r.newLocust()
 
 				locust.OnStart()
 
@@ -98,7 +105,7 @@ func (r *runner) spawnGoRoutines(spawnCount int, quit chan bool) {
 						}
 					}
 				}
-			}(locust)
+			}()
 		}
 	}
 	r.hatchComplete()
@@ -145,11 +152,13 @@ func (r *runner) waitTaskFinish() {
 	select {
 	case <-c:
 		log.Println("all task finish") // completed normally
+		break
 	case <-time.After(waitFinishTime):
 		log.Println("wait task finish timeout")
 	}
-
+	println("begin send exit single")
 	r.exitChannel <- true
+	println("finisha send exit single")
 }
 
 func (r *runner) onQuiting() {
@@ -171,19 +180,6 @@ func (r *runner) stop() {
 func (r *runner) getReady() {
 	runnerReady = true
 	r.state = stateInit
-
-	// report to master
-	go func() {
-		for {
-			select {
-			case data := <-messageToRunner:
-				data["user_count"] = r.numClients
-				if r.client != nil {
-					toMaster <- newMessage("stats", data, r.nodeID)
-				}
-			}
-		}
-	}()
 
 	if r.client == nil {
 		return
@@ -225,4 +221,33 @@ func (r *runner) getReady() {
 	// tell master, I'm ready
 	toMaster <- newMessage("client_ready", nil, r.nodeID)
 
+}
+
+var grunner *runner
+
+func newRunner(newLocust func() Locust, slaveMode bool) *runner {
+	if slaveMode {
+		client := newClient()
+		grunner = &runner{
+			newLocust:   newLocust,
+			client:      client,
+			nodeID:      getNodeID(),
+			exitChannel: make(chan bool),
+		}
+		return grunner
+	}
+
+	grunner = &runner{
+		newLocust:   newLocust,
+		nodeID:      getNodeID(),
+		exitChannel: make(chan bool),
+	}
+	return grunner
+}
+
+func reportStats(data map[string]interface{}) {
+	if grunner != nil && grunner.client != nil {
+		data["user_count"] = grunner.numClients
+		toMaster <- newMessage("stats", data, grunner.nodeID)
+	}
 }

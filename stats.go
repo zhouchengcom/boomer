@@ -242,7 +242,11 @@ func printStats(stats *requestStats) {
 		for _, v := range s.responseTimes {
 			sum += v
 		}
-		avg := sum / int64(len(s.responseTimes))
+		avg := int64(0)
+		if len(s.responseTimes) > 0 {
+			avg = sum / int64(len(s.responseTimes))
+		}
+
 		fmt.Fprintf(&buffer, "%15s %7d %7d %7d %7d %7d  | %7d %7d\n", s.name, s.numRequests,
 			s.numFailures, avg, s.minResponseTime, s.maxResponseTime, 0, qps)
 
@@ -311,7 +315,6 @@ var stats = newRequestStats()
 var requestSuccessChannel = make(chan *requestSuccess, 1000)
 var requestFailureChannel = make(chan *requestFailure, 1000)
 var clearStatsChannel = make(chan bool)
-var messageToRunner = make(chan map[string]interface{}, 10)
 
 func init() {
 	stats.entries = make(map[string]*statsEntry)
@@ -332,9 +335,8 @@ func init() {
 					printStats(stats)
 				}
 				data := collectReportData()
-				// send data to channel, no network IO in this goroutine
-				messageToRunner <- data
 
+				reportStats(data)
 			}
 		}
 	}()
