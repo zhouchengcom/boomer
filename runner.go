@@ -26,6 +26,8 @@ const (
 // when boomer receive start message, it will spawn several
 // goroutines to run Task.Fn .
 
+var runnerReady = false
+
 type runner struct {
 	newLocust   func() Locust
 	numClients  int32
@@ -167,7 +169,7 @@ func (r *runner) stop() {
 }
 
 func (r *runner) getReady() {
-
+	runnerReady = true
 	r.state = stateInit
 
 	// report to master

@@ -7,6 +7,8 @@ import (
 
 // "glocust"
 
+// "glocust"
+
 type Tasks struct {
 	glocust.LocustMate
 	index int
@@ -40,6 +42,5 @@ func (t *Tasks) boo() {
 }
 
 func main() {
-	// loga
 	glocust.Run(newLocust)
 }

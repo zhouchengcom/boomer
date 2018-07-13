@@ -328,7 +328,7 @@ func init() {
 			case <-clearStatsChannel:
 				stats.clearAll()
 			case <-ticker.C:
-				if *options.slave != true && *options.onlySummary != true {
+				if *options.slave != true && *options.onlySummary != true && runnerReady == true {
 					printStats(stats)
 				}
 				data := collectReportData()
