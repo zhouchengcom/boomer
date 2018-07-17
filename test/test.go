@@ -42,5 +42,6 @@ func (t *Tasks) boo() {
 }
 
 func main() {
-	glocust.Run(newLocust)
+	// glocust.Run(newLocust)
+	println(time.Now().Unix())
 }

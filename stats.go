@@ -2,8 +2,12 @@ package glocust
 
 import (
 	"bytes"
+	"encoding/csv"
 	"fmt"
+	"log"
+	"os"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -12,6 +16,8 @@ type requestStats struct {
 	errors    map[string]*statsError
 	total     *statsEntry
 	startTime int64
+	csvFile   *os.File
+	csvWriter *csv.Writer
 }
 
 func newRequestStats() *requestStats {
@@ -35,12 +41,27 @@ func newRequestStats() *requestStats {
 func (s *requestStats) logRequest(method, name string, responseTime int64, contentLength int64) {
 	s.total.log(responseTime, contentLength)
 	s.get(name, method).log(responseTime, contentLength)
+	if s.csvWriter != nil {
+		s.csvWriter.Write([]string{
+			strconv.FormatInt(time.Now().Unix(), 10),
+			"request",
+			"success", method, name, "1",
+			strconv.FormatInt(responseTime, 10),
+			strconv.FormatInt(contentLength, 10)})
+	}
 }
 
 func (s *requestStats) logError(method, name, err string) {
 	s.total.logError(err)
 	s.get(name, method).logError(err)
 
+	if s.csvWriter != nil {
+		s.csvWriter.Write([]string{
+			strconv.FormatInt(time.Now().Unix(), 10),
+			"request",
+			"failure", method, name, "1",
+			"0", err, "-"})
+	}
 	// store error in errors map
 	key := MD5(method, name, err)
 	entry, ok := s.errors[key]
@@ -99,6 +120,29 @@ func (s *requestStats) serializeErrors() map[string]map[string]interface{} {
 		errors[k] = v.toMap()
 	}
 	return errors
+}
+
+func (s *requestStats) createResultFile(name *string) error {
+	f, err := os.OpenFile(*name, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Printf("create result file %s fail\n", name)
+		return err
+	}
+	s.csvFile = f
+	s.csvWriter = csv.NewWriter(f)
+	s.csvWriter.Write([]string{"time", "type", "result", "subtype",
+		"name", "count", "respondtime", "exception", "parent"})
+
+	return nil
+}
+
+func (s *requestStats) closeResultFile() {
+	if s.csvWriter != nil {
+		s.csvWriter.Flush()
+	}
+	if s.csvFile != nil {
+		s.csvFile.Close()
+	}
 }
 
 type statsEntry struct {

@@ -15,6 +15,12 @@ import (
 func Run(newLocust func() Locust) {
 
 	kingpin.Parse()
+
+	if options.csvFilebase != nil {
+		stats.createResultFile(options.csvFilebase)
+	}
+	defer stats.closeResultFile()
+
 	if *options.slave == false {
 		runLocal(newLocust)
 
