@@ -1,6 +1,6 @@
 // +build linux
 
-package boomer
+package glocust
 
 import (
 	"fmt"
