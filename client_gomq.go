@@ -1,4 +1,4 @@
-// +build !goczmq
+// +build !linux
 
 package glocust
 

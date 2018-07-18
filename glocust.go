@@ -16,7 +16,7 @@ func Run(newLocust func() Locust) {
 
 	kingpin.Parse()
 
-	if options.csvFilebase != nil {
+	if len(*options.csvFilebase) > 0 {
 		stats.createResultFile(options.csvFilebase)
 	}
 	defer stats.closeResultFile()
@@ -31,7 +31,6 @@ func Run(newLocust func() Locust) {
 
 func runDistributed(newLocust func() Locust) {
 	r := newRunner(newLocust, true)
-	Events.Subscribe("boomer:quit", r.onQuiting)
 
 	r.getReady()
 
@@ -42,15 +41,20 @@ func runDistributed(newLocust func() Locust) {
 		go func() {
 			time.Sleep(time.Duration(*options.runTime) * time.Second)
 			log.Println("Time limit reached. Stopping Locust.")
-			Events.Publish("boomer:quit")
 			r.stop()
+			r.waitTaskFinish()
 		}()
 	}
+	go func() {
+		<-c
+		log.Println("Got SIGTERM signal")
+		r.stop()
+		r.waitTaskFinish()
+	}()
 
 	r.wait()
 
-	Events.Publish("boomer:quit")
-
+	r.onQuiting()
 	// wait for quit message is sent to master
 	<-disconnectedFromMaster
 	log.Println("shut down")
@@ -59,8 +63,6 @@ func runDistributed(newLocust func() Locust) {
 func runLocal(newLocust func() Locust) {
 
 	r := newRunner(newLocust, false)
-	println(r)
-	Events.Subscribe("boomer:quit", r.onQuiting)
 
 	r.getReady()
 	r.startHatching(*options.numClients, *options.hatchRate)
@@ -71,7 +73,6 @@ func runLocal(newLocust func() Locust) {
 		go func() {
 			time.Sleep(time.Duration(*options.runTime) * time.Second)
 			log.Println("Time limit reached. Stopping Locust.")
-			Events.Publish("boomer:quit")
 			r.stop()
 			r.waitTaskFinish()
 		}()
@@ -79,12 +80,10 @@ func runLocal(newLocust func() Locust) {
 	go func() {
 		<-c
 		log.Println("Got SIGTERM signal")
-		Events.Publish("boomer:quit")
 		r.stop()
 		r.waitTaskFinish()
 	}()
 
 	r.wait()
-
 	log.Println("shut down")
 }

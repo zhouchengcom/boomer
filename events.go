@@ -1,11 +1,7 @@
 package glocust
 
-import (
-	"github.com/asaskevich/EventBus"
-)
-
 // Events is core event bus instance of boomer
-var Events = EventBus.New()
+// var Events = EventBus.New()
 
 func RequestSuccess(requestType string, name string, responseTime int64, responseLength int64) {
 	// println(len(requestSuccessChannel))
