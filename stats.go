@@ -123,9 +123,9 @@ func (s *requestStats) serializeErrors() map[string]map[string]interface{} {
 }
 
 func (s *requestStats) createResultFile(name *string) error {
-	f, err := os.OpenFile(*name, os.O_APPEND|os.O_WRONLY, 0600)
+	f, err := os.Create(*name)
 	if err != nil {
-		log.Printf("create result file %s fail\n", name)
+		log.Printf("create result file %s fail %v\n", *name, err)
 		return err
 	}
 	s.csvFile = f
