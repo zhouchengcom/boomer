@@ -20,7 +20,7 @@ func newClient() client {
 	var message string
 
 	client = newZmqClient(*options.masterHost, *options.masterPort)
-	message = fmt.Sprintf("Boomer is connected to master(%s:%d|%d) press Ctrl+c to quit.", masterHost, masterPort, masterPort+1)
+	message = fmt.Sprintf("Boomer is connected to master(%s:%d|%d) press Ctrl+c to quit.", *options.masterHost, *options.masterPort, *options.masterPort+1)
 
 	log.Println(message)
 	return client
