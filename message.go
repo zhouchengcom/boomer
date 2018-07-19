@@ -3,12 +3,7 @@ package glocust
 import (
 	"log"
 
-	"github.com/ugorji/go/codec"
 	"github.com/vmihailenco/msgpack"
-)
-
-var (
-	mh codec.MsgpackHandle
 )
 
 type message struct {
