@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/ugorji/go/codec"
+	"github.com/vmihailenco/msgpack"
 )
 
 var (
@@ -11,9 +12,10 @@ var (
 )
 
 type message struct {
-	Type   string                 `codec: "type"`
-	Data   map[string]interface{} `codec: "data"`
-	NodeID string                 `codec: "node_id"`
+	_msgpack struct{}               `msgpack:",asArray"`
+	Type     string                 `msgpack: "type"`
+	Data     map[string]interface{} `msgpack: "data"`
+	NodeID   string                 `msgpack: "node_id"`
 }
 
 func newMessage(t string, data map[string]interface{}, nodeID string) (msg *message) {
@@ -23,22 +25,18 @@ func newMessage(t string, data map[string]interface{}, nodeID string) (msg *mess
 		NodeID: nodeID,
 	}
 }
-
 func (m *message) serialize() (out []byte) {
-	mh.StructToArray = true
-	enc := codec.NewEncoderBytes(&out, &mh)
-	err := enc.Encode(m)
+	b, err := msgpack.Marshal(m)
 	if err != nil {
 		log.Fatal("[msgpack] encode fail")
 	}
+	out = b
 	return
 }
 
 func newMessageFromBytes(raw []byte) *message {
-	mh.StructToArray = true
-	dec := codec.NewDecoderBytes(raw, &mh)
 	var newMsg = &message{}
-	err := dec.Decode(newMsg)
+	err := msgpack.Unmarshal(raw, newMsg)
 	if err != nil {
 		log.Fatal("[msgpack] decode fail")
 	}

@@ -174,6 +174,30 @@ func (r *runner) stop() {
 
 }
 
+func conInt(i interface{}) int {
+	switch v := i.(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case int8:
+		return int(v)
+	case int16:
+		return int(v)
+	case uint:
+		return int(v)
+	case uint8:
+		return int(v)
+	case uint16:
+		return int(v)
+	case uint64:
+		return int(v)
+	default:
+		log.Println("can't convert int")
+		return 0
+	}
+}
+
 func (r *runner) getReady() {
 	runnerReady = true
 	r.state = stateInit
@@ -192,11 +216,9 @@ func (r *runner) getReady() {
 				clients, _ := msg.Data["num_clients"]
 				hatchRate := int(rate.(float64))
 				workers := 0
-				if _, ok := clients.(uint64); ok {
-					workers = int(clients.(uint64))
-				} else {
-					workers = int(clients.(int64))
-				}
+
+				workers = conInt(clients)
+
 				if workers == 0 || hatchRate == 0 {
 					log.Printf("Invalid hatch message from master, num_clients is %d, hatch_rate is %d\n",
 						workers, hatchRate)

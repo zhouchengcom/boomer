@@ -41,7 +41,19 @@ func (t *Tasks) boo() {
 	glocust.RequestSuccess("http", "boo", elapsed, int64(10))
 }
 
+// func do(i interface{}) {
+// 	switch v := i.(type) {
+// 	case int, int8, int16, int32, int64:
+// 		fmt.Printf("Twice %v is %v\n", v, v*2)
+// 		// workers = int(clients.(t))
+// 	case uint, uint8, uint16, uint32, uint64:
+// 		// workers = int(t)
+// 		println(v)
+// 	}
+// }
+
 func main() {
 	glocust.Run(newLocust)
 	// println(time.Now().Unix())
+
 }
