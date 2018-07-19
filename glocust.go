@@ -36,6 +36,7 @@ func runDistributed(newLocust func() Locust) {
 
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGINT)
 	log.Println("press Ctrl+c to quit")
 
 	if *options.runTime != 0 {
